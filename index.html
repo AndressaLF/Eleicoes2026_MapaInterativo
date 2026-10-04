@@ -43,8 +43,8 @@
     <div id="mapa" role="region" aria-label="Mapa do Brasil"></div>
     <aside id="painel" aria-label="Números do lugar selecionado">
       <div id="legenda"></div>
-      <label id="caixa-cidade" hidden>Buscar cidade neste estado
-        <input id="buscar-cidade" type="search" list="lista-cidades" placeholder="Digite o nome e escolha">
+      <label id="caixa-cidade">Buscar cidade neste estado
+        <input id="buscar-cidade" type="search" list="lista-cidades" placeholder="Escolha um estado para buscar a cidade" disabled>
         <datalist id="lista-cidades"></datalist>
       </label>
       <h2 id="painel-titulo">Brasil</h2>
@@ -78,8 +78,8 @@
       </li>
       <li>
         <h3>4. Veja uma cidade</h3>
-        <p>Com o estado aberto, clique na cidade ou digite o nome em <strong>Buscar cidade neste estado</strong>. O painel mostra os votos daquele lugar.</p>
-        <p class="exemplo">Exemplo: no Acre, busque Acrelândia.</p>
+        <p>Com o estado aberto, clique na cidade ou digite o nome em <strong>Buscar cidade neste estado</strong>. A lista traz só as cidades daquele estado. No mapa do Brasil, o campo fica desligado.</p>
+        <p class="exemplo">Exemplo: no Acre, busque Acrelândia. São Paulo não aparece nessa lista.</p>
       </li>
       <li>
         <h3>5. Volte ao Brasil</h3>

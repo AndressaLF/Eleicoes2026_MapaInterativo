@@ -273,7 +273,7 @@ async function abrirEstado(sigla) {
   Mapa.cidadeAtiva = "";
   document.getElementById("estado").value = uf.sigla;
   document.getElementById("voltar").disabled = false;
-  document.getElementById("caixa-cidade").hidden = false;
+  definirBuscaCidade(true);
   const camada = camadaDoEstado(uf.sigla);
   if (camada) enquadrar(camada.getBounds(), 12);
   pintar();
@@ -305,8 +305,7 @@ function voltarAoBrasil() {
   Mapa.andamentoUf = null;
   document.getElementById("estado").value = "";
   document.getElementById("voltar").disabled = true;
-  document.getElementById("caixa-cidade").hidden = true;
-  document.getElementById("buscar-cidade").value = "";
+  definirBuscaCidade(false);
   if (Mapa.cidades) {
     Mapa.folha.removeLayer(Mapa.cidades);
     Mapa.cidades = null;
@@ -350,7 +349,6 @@ function desenharCidades(uf, geo) {
       camada.on("click", () => selecionarCidade(uf, feature.properties.codarea, camada));
     }
   }).addTo(Mapa.folha);
-  preencherBusca(uf);
   pintarCidades();
 }
 
@@ -385,7 +383,18 @@ function pintarCidades() {
   });
 }
 
+function definirBuscaCidade(ativa) {
+  const campo = document.getElementById("buscar-cidade");
+  campo.disabled = !ativa;
+  campo.value = "";
+  document.getElementById("lista-cidades").replaceChildren();
+  campo.placeholder = ativa
+    ? "Digite o nome da cidade"
+    : "Escolha um estado para buscar a cidade";
+}
+
 function preencherBusca(uf) {
+  if (Mapa.vista !== uf.sigla) return;
   const lista = document.getElementById("lista-cidades");
   lista.replaceChildren();
   const tabela = (Mapa.tabela && Mapa.tabela[uf.sigla.toLowerCase()]) || {};
@@ -398,6 +407,7 @@ function preencherBusca(uf) {
       item.dataset.ibge = cidade.ibge;
       lista.appendChild(item);
     });
+  document.getElementById("buscar-cidade").placeholder = "Digite o nome da cidade";
 }
 
 function aoBuscarCidade() {
@@ -445,6 +455,7 @@ async function atualizarEstado(uf) {
   const token = Mapa.seqVista;
   if (!Mapa.tabela) Mapa.tabela = await Tse.tabelaDeCidades();
   if (token !== Mapa.seqVista || Mapa.vista !== uf.sigla) return;
+  preencherBusca(uf);
   const endereco = Tse.enderecoAndamento(turnoAtual(), cargoAtual(), uf.sigla);
   const baixado = await Tse.baixar(endereco);
   if (token !== Mapa.seqVista || Mapa.vista !== uf.sigla) return;
