@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mapa da apuração 2026</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+  <header>
+    <div>
+      <p class="olho">Eleições 2026 · TSE</p>
+      <h1>Mapa da apuração <a href="#guia">Como usar</a></h1>
+    </div>
+    <p id="status" class="status" aria-live="polite">Carregando o mapa…</p>
+  </header>
+
+  <section class="controles" aria-label="Filtros do mapa">
+    <label>Turno
+      <select id="turno"></select>
+    </label>
+    <label>Cargo
+      <select id="cargo"></select>
+    </label>
+    <label>Colorir por
+      <select id="modo">
+        <option value="apuracao">Percentual apurado</option>
+        <option value="lider">Quem lidera no estado</option>
+      </select>
+    </label>
+    <label>Ir para
+      <select id="estado">
+        <option value="">Brasil</option>
+      </select>
+    </label>
+    <button id="voltar" type="button" disabled>Ver o Brasil</button>
+    <button id="atualizar" type="button">Atualizar agora</button>
+  </section>
+  <p class="dica">Clique num estado para aproximar. Esc, ou o botão Ver o Brasil, volta ao mapa do país.</p>
+
+  <main>
+    <div id="mapa" role="region" aria-label="Mapa do Brasil"></div>
+    <aside id="painel" aria-label="Números do lugar selecionado">
+      <div id="legenda"></div>
+      <label id="caixa-cidade" hidden>Buscar cidade neste estado
+        <input id="buscar-cidade" type="search" list="lista-cidades" placeholder="Digite o nome e escolha">
+        <datalist id="lista-cidades"></datalist>
+      </label>
+      <h2 id="painel-titulo">Brasil</h2>
+      <p id="painel-resumo"></p>
+      <dl id="painel-numeros"></dl>
+      <ol id="painel-candidatos"></ol>
+      <p id="painel-nota"></p>
+      <p><a id="painel-arquivo" href="#" target="_blank" rel="noopener" hidden>Abrir o arquivo original do TSE</a></p>
+    </aside>
+  </main>
+
+  <article id="guia">
+    <h2>Como usar o mapa</h2>
+    <p>Os votos são os do site oficial do TSE. Com esta página aberta, eles se atualizam sozinhos, cerca de 20 segundos depois da última leitura. A frase no alto da tela diz a hora dessa atualização.</p>
+    <ol class="passos">
+      <li>
+        <h3>1. Escolha a eleição</h3>
+        <p>No topo, abra <strong>Turno</strong> e <strong>Cargo</strong>.</p>
+        <p class="exemplo">Exemplo: 1º turno e Presidente.</p>
+      </li>
+      <li>
+        <h3>2. Escolha a cor</h3>
+        <p>Em <strong>Colorir por</strong>, há duas formas de pintar o Brasil.</p>
+        <p class="exemplo"><strong>Percentual apurado:</strong> o verde mais forte é onde mais seções já foram contadas. O bege é onde ainda há pouco ou nada.</p>
+        <p class="exemplo"><strong>Quem lidera no estado:</strong> cada cor é uma pessoa na frente. O nome fica no painel à direita.</p>
+      </li>
+      <li>
+        <h3>3. Abra um estado</h3>
+        <p>Clique no estado no mapa, ou escolha o nome em <strong>Ir para</strong>. O estado cresce na tela e as cidades aparecem. A roda do mouse e os botões + e − aproximam mais.</p>
+        <p class="exemplo">Exemplo: clique em São Paulo.</p>
+      </li>
+      <li>
+        <h3>4. Veja uma cidade</h3>
+        <p>Com o estado aberto, clique na cidade ou digite o nome em <strong>Buscar cidade neste estado</strong>. O painel mostra os votos daquele lugar.</p>
+        <p class="exemplo">Exemplo: no Acre, busque Acrelândia.</p>
+      </li>
+      <li>
+        <h3>5. Volte ao Brasil</h3>
+        <p>O botão <strong>Ver o Brasil</strong> ou a tecla Esc devolve o mapa do país inteiro.</p>
+      </li>
+      <li>
+        <h3>6. Atualize na hora</h3>
+        <p><strong>Atualizar agora</strong> busca os números sem esperar os 20 segundos. A frase no alto muda quando a leitura termina.</p>
+        <p class="exemplo">Antes das 17h do dia da votação, o mapa pode mostrar zero voto. A contagem oficial ainda não começou.</p>
+      </li>
+    </ol>
+  </article>
+
+  <footer>
+    Números: Tribunal Superior Eleitoral. Desenho dos estados e das cidades: IBGE.
+    Fundo do mapa: OpenStreetMap.
+    <a href="https://resultados.tse.jus.br/oficial/app/index.html">Ver a apuração no site do TSE</a>.
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="js/config.js"></script>
+  <script src="js/tse.js"></script>
+  <script src="js/mapa.js"></script>
+</body>
+</html>
