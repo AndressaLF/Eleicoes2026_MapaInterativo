@@ -275,6 +275,32 @@ main {
 
 .passos .exemplo:last-child { margin-bottom: 0; }
 
+.doc-github {
+  margin-top: 16px;
+  background: var(--papel);
+  border: 1px solid var(--linha);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: var(--sombra);
+}
+
+.doc-github h2 {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+}
+
+.doc-github p {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.doc-github p:last-child { margin-bottom: 0; }
+
+.doc-github a {
+  color: var(--verde);
+  font-weight: 700;
+}
+
 footer {
   padding: 8px 16px 28px;
   color: #645d53;

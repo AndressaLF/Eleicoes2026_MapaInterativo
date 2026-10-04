@@ -11,6 +11,7 @@ Eu fiz esta ferramenta para poder visualizar a contagem de votos do Brasil duran
   - [O que dá para fazer na tela](#o-que-dá-para-fazer-na-tela)
 - [Teste geral](#teste-geral)
   - [Conferir o mapa com a página do TSE](#conferir-o-mapa-com-a-página-do-tse)
+  - [Ensaio antes da divulgação](#ensaio-antes-da-divulgação)
 - [O que eu fiz](#o-que-eu-fiz)
   - [Etapa 1. Descobrir os códigos oficiais](#etapa-1-descobrir-os-códigos-oficiais)
   - [Etapa 2. Usar só endereços que o TSE documentou](#etapa-2-usar-só-endereços-que-o-tse-documentou)
@@ -80,9 +81,9 @@ Cargos aceitos no endereço: `presidente`, `governador`, `senador`, `dep-federal
 
 ### Para qualquer pessoa, pelo GitHub Pages
 
-1. Envie esta pasta para um repositório público no GitHub.
-2. Em Settings, Pages, escolha a branch principal e a pasta raiz (`/`).
-3. O endereço fica `https://seu-usuario.github.io/nome-do-repositorio/`.
+Os arquivos da página estão no repositório [AndressaLF/Eleicoes2026_MapaInterativo](https://github.com/AndressaLF/Eleicoes2026_MapaInterativo), na branch `main`, pasta raiz. O GitHub Pages publica essa pasta no endereço:
+
+[https://andressalf.github.io/Eleicoes2026_MapaInterativo/](https://andressalf.github.io/Eleicoes2026_MapaInterativo/)
 
 Quem abrir esse link vê o mesmo mapa. Cada visitante consulta o TSE do próprio computador. O meu computador não fica no meio.
 
@@ -95,7 +96,7 @@ Quem abrir esse link vê o mesmo mapa. Cada visitante consulta o TSE do próprio
 - Ler o painel ao lado: seções, eleitores e candidatos. O link abre o arquivo original do TSE.
 - Voltar ao Brasil com o botão "Ver o Brasil" ou com a tecla Esc.
 - Forçar uma leitura imediata com "Atualizar agora". Fora isso, a leitura seguinte acontece sozinha em 20 segundos.
-- Descer até "Como usar o mapa" para ler o passo a passo, com um exemplo em cada etapa.
+- Descer até "Como usar o mapa" para ler o passo a passo, com um exemplo em cada etapa. Abaixo dos passos, o quadrinho **Documentação no GitHub** abre este arquivo no repositório.
 
 Deputado federal, estadual e distrital ficam só no percentual no mapa do país. A lista desses cargos é grande. Os nomes aparecem quando você abre o estado.
 
@@ -119,7 +120,16 @@ No rodapé do mapa, o link **Ver a apuração no site do TSE** abre esse mesmo e
 6. Repita com um estado. No mapa, menu **Ir para**, escolha "Acre". No Portal Resultados, em **UF**, escolha Acre e mantenha Presidente no 1º turno. Compare de novo seções, percentual de seções e os votos do primeiro nome da lista.
 7. Antes das 17h, horário de Brasília, as duas telas podem mostrar zero voto e zero seção contada. Isso confirma o teste: o mapa chegou no mesmo arquivo que o TSE, e a contagem oficial ainda não começou. Depois das 17h, os números sobem juntos nas duas telas.
 
-**O que confirma.** Com o mesmo turno, o mesmo cargo e o mesmo lugar, o **Percentual** e as **Seções contadas** do mapa repetem as seções totalizadas do Portal Resultados. O nome, os votos e o percentual de cada candidato do painel repetem a lista do TSE. O mapa mostra até 8 candidatos que já têm voto. O primeiro da lista do mapa é o primeiro da lista do TSE.
+**O que confirma.** Com o mesmo turno, o mesmo cargo e o mesmo lugar, o **Percentual** e as **Seções contadas** do mapa repetem as seções totalizadas do Portal Resultados. O nome, os votos e o percentual de cada candidato do painel repetem a lista do TSE. O mapa mostra até 8 candidatos que já têm voto. Quem tem mais votos aparece primeiro.
+
+### Ensaio antes da divulgação
+
+Em 4/10/2026, antes das 17h, eu abri os dois arquivos oficiais de presidente no Brasil, cada um uma vez. Os dois responderam.
+
+- Andamento: [br-e006257-ab.json](https://resultados.tse.jus.br/oficial/ele2026/6257/dados/br/br-e006257-ab.json). Data `03/10/2026`, hora `15:36:16`. No Brasil, `pstn` era `0`, seções contadas `st` era `0` e seções existentes `ts` era `499248`. O arquivo traz 29 linhas de lugar, o Brasil e os estados.
+- Votos: [br-c0001-e006257-u.json](https://resultados.tse.jus.br/oficial/ele2026/6257/dados/br/br-c0001-e006257-u.json). Data `03/10/2026`, hora `14:47:37`. São 12 candidatos. Cada um tem `nmu` (nome na urna) e `vap` (votos). Todos os `vap` estavam em `0`.
+
+A lista do painel usa esses mesmos rótulos. Eu repeti a conta do mapa trocando o zero por quantidades de exemplo, no mesmo formato do arquivo. A ordem saiu da maior quantidade para a menor. Quando o TSE gravar um `vap` maior que zero, o painel mostra esse número e coloca na frente quem tiver mais votos. O **Percentual** do painel continua sendo o `pstn` do andamento.
 
 ## O que eu fiz
 
@@ -255,7 +265,9 @@ Ao clicar num estado, o mapa ocupa a tela com ele, pede as cidades ao IBGE e o a
 
 ### Etapa 7. Atualizar sozinho a cada 20 segundos
 
-Eu programei a página para pedir o andamento de novo a cada 20 segundos. O TSE guarda cada arquivo na rede por cerca de 20 a 60 segundos. Pedir de 5 em 5 segundos recebe a mesma cópia, sem voto novo, e gasta o limite de consultas. Se o TSE ainda não gerou arquivo novo, o desenho permanece. O botão "Atualizar agora" faz uma leitura na hora.
+Eu programei a página para pedir o andamento de novo a cada 20 segundos. Esse é o ritmo que cabe no limite do TSE: no mapa do Brasil, cada volta pede um arquivo de andamento. O arquivo de votos só é pedido de novo quando a hora gravada no andamento muda. O TSE guarda cada arquivo na rede por cerca de 20 a 60 segundos e aceita cerca de 100 consultas por segundo neste computador. Pedir de 5 em 5 segundos recebe a mesma cópia, sem voto novo, e gasta esse limite.
+
+Se o endereço ainda não existe, o TSE responde que o arquivo não foi encontrado. A página então pausa a leitura automática, para não repetir um endereço vazio. Várias respostas desse tipo seguidas podem fazer o TSE pausar o acesso por cerca de 10 minutos. O botão "Atualizar agora" tenta de novo na hora, quando a pessoa pede. Se o TSE ainda não gerou arquivo novo, o desenho permanece.
 
 **Arquivos desta etapa.** Eu não criei arquivo novo. O intervalo de 20 segundos está em `js/config.js`. O pedido repetido está em `js/mapa.js`.
 
@@ -290,7 +302,7 @@ Eu escrevi, na parte de baixo da página e em linguagem comum, o que cada contro
 5. No passo 4, com São Paulo aberto, clique em **Buscar cidade neste estado** e digite `Campinas`. A lista traz cidades de São Paulo. Acrelândia fica de fora.
 6. Pressione Esc, como o passo 5 descreve. O mapa volta ao Brasil e o campo de cidade fica acinzentado.
 
-**O que confirma.** Dá para repetir os seis exemplos só com o mouse. Os nomes escritos no texto são os nomes dos botões e dos menus. Ao voltar ao Brasil, o campo de cidade fica desligado.
+**O que confirma.** Dá para repetir os seis exemplos só com o mouse. Os nomes escritos no texto são os nomes dos botões e dos menus. Ao voltar ao Brasil, o campo de cidade fica desligado. Abaixo dos seis passos, o quadrinho **Documentação no GitHub** aponta para [este arquivo no repositório](https://github.com/AndressaLF/Eleicoes2026_MapaInterativo#readme).
 
 ### Etapa 9. Conferir os endereços com um teste automático
 
@@ -319,22 +331,21 @@ node tests/verificar.js
 
 O GitHub Pages é o jeito que eu escolhi para deixar esta pasta no ar, de graça, para qualquer pessoa abrir um endereço na internet. O computador não precisa ficar ligado o tempo todo. O GitHub só entrega os arquivos prontos. Quem abre o endereço consulta o TSE no próprio navegador, no mesmo ritmo de 20 segundos.
 
-**O que eu já fiz.** A página já é feita só de arquivos prontos: `index.html`, `css/estilos.css`, a pasta `js/` e `data/brasil-estados.geojson`. Eu transformei a pasta num repositório Git, na branch `main`, com o primeiro registro desses arquivos. Esse é o formato que o GitHub Pages publica.
+**O que eu já fiz.** A página é feita de arquivos prontos: `index.html`, `css/estilos.css`, a pasta `js/` e `data/brasil-estados.geojson`. Eu enviei esses arquivos, e este README, para o repositório público [AndressaLF/Eleicoes2026_MapaInterativo](https://github.com/AndressaLF/Eleicoes2026_MapaInterativo), na branch `main`. O teste `tests/verificar.js` ficou só no computador, porque o Pages não executa esse arquivo.
 
-**O que ainda falta.** Eu ainda não terminei o envio para o GitHub. A entrada na conta foi pedida e não foi concluída, então não há repositório remoto, não há envio dos arquivos e o interruptor do Pages não foi ligado. Por isso ainda não existe um endereço `github.io`. O mapa que funciona agora é o do computador local, em `http://localhost:8080`.
+**Pages.** O GitHub publica a pasta raiz da branch `main` em [https://andressalf.github.io/Eleicoes2026_MapaInterativo/](https://andressalf.github.io/Eleicoes2026_MapaInterativo/). No computador, o mesmo mapa continua em `http://localhost:8080`.
 
 **Arquivos desta etapa.** Eu não criei arquivo novo da página. O registro Git guarda os mesmos arquivos das etapas anteriores.
 
 **Situação.** Eu quis que o mapa pudesse ser aberto por qualquer pessoa, em outro computador, sem instalar nada.
 
-**Como testar.** O programador separa dois acessos: o que já funciona neste computador e o endereço público, que ainda depende do envio ao GitHub.
+**Como testar.** O programador abre os dois endereços.
 
-1. No navegador, abra `http://localhost:8080`. O mapa, os menus e a frase com a hora do arquivo do TSE precisam aparecer. Este é o teste do computador local.
-2. Procure, na barra de endereço, um link que contenha `github.io`. Ele ainda não existe. A pasta ainda não foi enviada ao GitHub e o Pages ainda não foi ligado.
-3. Quando esse envio existir, abra uma janela anônima. No Chrome ou no Edge, o atalho é Ctrl+Shift+N. Cole o endereço `https://seu-usuario.github.io/nome-do-repositorio/` e pressione Enter.
-4. A página precisa mostrar o mesmo mapa, os mesmos menus e a frase com a hora do arquivo do TSE, sem pedir instalação.
+1. No navegador, abra `http://localhost:8080`. O mapa, os menus e a frase com a hora do arquivo do TSE precisam aparecer.
+2. Abra uma janela anônima. No Chrome ou no Edge, o atalho é Ctrl+Shift+N. Cole `https://andressalf.github.io/Eleicoes2026_MapaInterativo/` e pressione Enter.
+3. Role até o fim. Abaixo dos seis passos, o quadrinho **Documentação no GitHub** precisa abrir [a documentação](https://github.com/AndressaLF/Eleicoes2026_MapaInterativo#readme).
 
-**O que confirma.** Hoje o teste que passa é o de `http://localhost:8080`. A etapa está preparada para o GitHub Pages. O endereço `github.io` entra na prova quando a conta estiver conectada, a pasta enviada e, em Settings, Pages, a branch `main` e a pasta raiz (`/`) estiverem escolhidas. Quem abrir esse link consulta o TSE do próprio computador.
+**O que confirma.** Os dois endereços mostram o mesmo mapa, os menus e a frase com a hora do arquivo do TSE. Quem abre o link público consulta o TSE do próprio computador.
 
 ## Arquivos principais
 
