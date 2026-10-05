@@ -1,0 +1,22 @@
+# Ambiente virtual. Quem clona o projeto cria o seu com: python -m venv .venv
+.venv/
+venv/
+env/
+
+# Arquivos que o Python gera ao rodar. Não são necessários para reproduzir o projeto.
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Preferências deste computador. O painel abre sem elas.
+.streamlit/
+
+# Arquivos do sistema e do editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/

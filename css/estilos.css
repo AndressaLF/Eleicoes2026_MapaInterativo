@@ -208,6 +208,12 @@ main {
   color: #534d44;
 }
 
+#legenda p {
+  margin: 4px 0 8px;
+  color: #534d44;
+  font-size: 0.85rem;
+}
+
 .pessoa-legenda {
   justify-content: flex-start;
   align-items: center;

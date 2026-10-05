@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Mapa da apuração 2026</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-  <link rel="stylesheet" href="css/estilos.css">
+  <link rel="stylesheet" href="css/estilos.css?v=8">
 </head>
 <body>
   <header>
@@ -25,8 +25,8 @@
     </label>
     <label>Colorir por
       <select id="modo">
+        <option value="lider" selected>Quem lidera no estado</option>
         <option value="apuracao">Percentual apurado</option>
-        <option value="lider">Quem lidera no estado</option>
       </select>
     </label>
     <label>Ir para
@@ -43,13 +43,13 @@
     <div id="mapa" role="region" aria-label="Mapa do Brasil"></div>
     <aside id="painel" aria-label="Números do lugar selecionado">
       <div id="legenda"></div>
-      <label id="caixa-cidade">Buscar cidade neste estado
-        <input id="buscar-cidade" type="search" list="lista-cidades" placeholder="Escolha um estado para buscar a cidade" disabled>
-        <datalist id="lista-cidades"></datalist>
-      </label>
       <h2 id="painel-titulo">Brasil</h2>
       <p id="painel-resumo"></p>
       <dl id="painel-numeros"></dl>
+      <label id="caixa-cidade" hidden>Buscar cidade neste estado
+        <input id="buscar-cidade" type="search" list="lista-cidades" placeholder="Escolha um estado para buscar a cidade" disabled>
+        <datalist id="lista-cidades"></datalist>
+      </label>
       <ol id="painel-candidatos"></ol>
       <p id="painel-nota"></p>
       <p><a id="painel-arquivo" href="#" target="_blank" rel="noopener" hidden>Abrir o arquivo original do TSE</a></p>
@@ -66,10 +66,10 @@
         <p class="exemplo">Exemplo: 1º turno e Presidente.</p>
       </li>
       <li>
-        <h3>2. Escolha a cor</h3>
+        <h3>2. Escolha como Colorir</h3>
         <p>Em <strong>Colorir por</strong>, há duas formas de pintar o Brasil.</p>
         <p class="exemplo"><strong>Percentual apurado:</strong> o verde mais forte é onde mais seções já foram contadas. O bege é onde ainda há pouco ou nada.</p>
-        <p class="exemplo"><strong>Quem lidera no estado:</strong> cada cor é uma pessoa na frente. O nome fica no painel à direita.</p>
+        <p class="exemplo"><strong>Quem lidera no estado:</strong> vermelho é PDT, PCdoB, PSOL, PSB, PT, PTB ou PV. Azul são os demais partidos. O nome fica no painel à direita.</p>
       </li>
       <li>
         <h3>3. Abra um estado</h3>
@@ -105,8 +105,8 @@
   </footer>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script src="js/config.js"></script>
-  <script src="js/tse.js"></script>
-  <script src="js/mapa.js"></script>
+  <script src="js/config.js?v=8"></script>
+  <script src="js/tse.js?v=8"></script>
+  <script src="js/mapa.js?v=8"></script>
 </body>
 </html>

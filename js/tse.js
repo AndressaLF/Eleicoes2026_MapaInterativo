@@ -174,6 +174,25 @@ Tse.lerCidades = function (json) {
   return porUf;
 };
 
+/* O percentual de seções (pstn) de um lugar não mistura com o de outro.
+   Brasil lê só a linha br. Estado e cidade leem só o arquivo daquele estado.
+   Se o arquivo ainda não é do estado pedido, devolve vazio em vez do número do Brasil. */
+Tse.escolherApuracao = function (tipo, fontes, sigla, codigo) {
+  const dados = fontes || {};
+  if (tipo === "br") {
+    const locais = dados.brasil && dados.brasil.locais;
+    return (locais && locais.br) || null;
+  }
+  if (!dados.uf || dados.ufSigla !== sigla) return null;
+  const locais = dados.uf.locais || {};
+  if (tipo === "uf") return locais[String(sigla || "").toLowerCase()] || null;
+  if (tipo === "mun") {
+    if (!codigo) return null;
+    return locais[String(codigo)] || null;
+  }
+  return null;
+};
+
 /* Locais indexados pelo código que vem em cdabr (br, sp, 01120...). */
 Tse.lerAndamento = function (json) {
   const locais = {};
@@ -202,11 +221,20 @@ Tse.lerAndamento = function (json) {
   };
 };
 
+Tse.siglasDaColigacao = function (grupo) {
+  if (!grupo || grupo.tp !== "c") return [];
+  return String(grupo.com || "")
+    .split("/")
+    .map((parte) => parte.trim())
+    .filter(Boolean);
+};
+
 Tse.lerCandidatos = function (json) {
   const lista = [];
   const cargos = Tse.comoLista(json && json.carg);
   cargos.forEach((bloco) => {
     Tse.comoLista(bloco.agr).forEach((grupo) => {
+      const coligacao = Tse.siglasDaColigacao(grupo);
       Tse.comoLista(grupo.par).forEach((partido) => {
         Tse.comoLista(partido.cand).forEach((cand) => {
           const vice = Tse.comoLista(cand.vs)[0];
@@ -216,6 +244,7 @@ Tse.lerCandidatos = function (json) {
             votos: Tse.numero(cand.vap),
             percentual: Tse.numero(cand.pvapn != null && cand.pvapn !== "" ? cand.pvapn : cand.pvap),
             partido: partido.sg || "",
+            coligacao: coligacao,
             vice: vice ? (vice.nmu || vice.nm || "") : ""
           });
         });

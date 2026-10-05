@@ -25,8 +25,22 @@ const Config = {
     { id: "governador", nome: "Governador", ambito: "estadual", cargo: 3, disputa: "majoritaria" },
     { id: "senador", nome: "Senador", ambito: "estadual", cargo: 5, disputa: "majoritaria" },
     { id: "dep-federal", nome: "Deputado federal", ambito: "estadual", cargo: 6, disputa: "proporcional" },
-    { id: "dep-estadual", nome: "Deputado estadual", ambito: "estadual", cargo: 7, disputa: "proporcional", exceto: "DF" },
+    { id: "dep-estadual", nome: "Deputado estadual", ambito: "estadual", cargo: 7, disputa: "proporcional", exceto: "DF", lista: 24 },
     { id: "dep-distrital", nome: "Deputado distrital", ambito: "estadual", cargo: 8, disputa: "proporcional", apenas: "DF" }
+  ],
+
+  /* Vermelho no mapa: só a sigla do próprio candidato, se estiver nesta lista.
+     Azul: qualquer outro partido. A chapa não muda a cor. */
+  corVermelho: "#b91c1c",
+  corAzul: "#1d4e89",
+  partidosEsquerda: [
+    { sigla: "PDT", nome: "Partido Democrático Trabalhista", numero: 12 },
+    { sigla: "PCDOB", nome: "Partido Comunista do Brasil", numero: 65 },
+    { sigla: "PSOL", nome: "Partido Socialismo e Liberdade", numero: 50 },
+    { sigla: "PSB", nome: "Partido Socialista Brasileiro", numero: 40 },
+    { sigla: "PT", nome: "Partido dos Trabalhadores", numero: 13 },
+    { sigla: "PTB", nome: "Partido Trabalhista Brasileiro", numero: 14 },
+    { sigla: "PV", nome: "Partido Verde", numero: 43 }
   ],
 
   /* ibge é o código de 2 dígitos usado no desenho do mapa. */
@@ -69,6 +83,36 @@ Config.ufPorSigla = function (sigla) {
 Config.ufPorIbge = function (codigo) {
   const alvo = String(codigo);
   return Config.estados.find((uf) => uf.ibge === alvo) || null;
+};
+
+Config.siglaLimpa = function (sigla) {
+  return String(sigla || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+};
+
+Config.numeroPartido = function (numero) {
+  const digitos = String(numero || "").replace(/\D/g, "");
+  if (!digitos) return 0;
+  if (digitos.length <= 2) return parseInt(digitos, 10) || 0;
+  return parseInt(digitos.slice(0, 2), 10) || 0;
+};
+
+Config.ehEsquerda = function (sigla, numero) {
+  const lista = Config.partidosEsquerda;
+  const propria = Config.siglaLimpa(sigla);
+  if (propria && lista.some((partido) => partido.sigla === propria)) return true;
+  if (!propria) {
+    const codigo = Config.numeroPartido(numero);
+    return lista.some((partido) => partido.numero === codigo);
+  }
+  return false;
+};
+
+Config.corDoBloco = function (sigla, numero) {
+  return Config.ehEsquerda(sigla, numero) ? Config.corVermelho : Config.corAzul;
 };
 
 Config.cargoPorId = function (id) {

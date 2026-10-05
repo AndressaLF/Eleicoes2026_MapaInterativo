@@ -11,18 +11,21 @@ const Mapa = {
   cidadeAtiva: "",
   andamentoBrasil: null,
   andamentoUf: null,
+  andamentoUfSigla: "",
+  apuracao: null,
   votos: {},
   seqVista: 0,
   seqDados: 0,
+  seqSelecao: 0,
   cidadeToken: 0,
   ocupado: false,
   deNovo: false,
+  forcarPendente: false,
   pausado: false
 };
 
 const COR_VAZIA = "#e8dcc4";
 const COR_CHEIA = "#0b6b3a";
-const PALETA = ["#1d4e89", "#c0392b", "#1e7f4f", "#d97706", "#6d28d9", "#0f766e", "#9f1239", "#365314", "#b45309", "#155e75"];
 
 function iniciarMapa() {
   preencherControles();
@@ -100,6 +103,7 @@ function aplicarLink() {
   const params = new URLSearchParams(location.search);
   if (params.get("turno")) document.getElementById("turno").value = params.get("turno");
   if (params.get("cargo")) document.getElementById("cargo").value = params.get("cargo");
+  if (params.get("modo")) document.getElementById("modo").value = params.get("modo");
   ajustarModo();
   const uf = (params.get("uf") || "").toUpperCase();
   if (Config.ufPorSigla(uf)) document.getElementById("estado").value = uf;
@@ -133,8 +137,11 @@ function estiloEstado(feature) {
   let fill = COR_VAZIA;
   if (existe) {
     const lider = liderDe(sigla);
-    if (modoAtual() === "lider" && lider && lider.cor) fill = lider.cor;
-    else fill = corApuracao(percentualDe(sigla));
+    if (modoAtual() === "lider") {
+      if (lider && lider.cor) fill = lider.cor;
+    } else {
+      fill = corApuracao(percentualDe(sigla));
+    }
   }
   if (Mapa.vista && !aberto) {
     return { color: "#8a8175", weight: 0.6, fillColor: "#d9d3c7", fillOpacity: 0.25 };
@@ -160,9 +167,9 @@ function hex(cor) {
   return [1, 3, 5].map((i) => parseInt(cor.slice(i, i + 2), 16));
 }
 
-function corCandidato(numero) {
-  const n = Math.abs(parseInt(numero, 10) || 0);
-  return PALETA[n % PALETA.length];
+function corCandidato(candidato) {
+  if (!candidato) return Config.corAzul;
+  return Config.corDoBloco(candidato.partido, candidato.numero, candidato.coligacao);
 }
 
 function percentualDe(sigla) {
@@ -216,7 +223,9 @@ function atualizarLegenda() {
   }
   const titulo = document.createElement("strong");
   titulo.textContent = "Quem lidera no estado";
-  caixa.appendChild(titulo);
+  const explicacao = document.createElement("p");
+  explicacao.textContent = "Vermelho: PDT, PCdoB, PSOL, PSB, PT, PTB e PV. Azul: os demais.";
+  caixa.append(titulo, explicacao);
   const vistos = {};
   Config.estados.forEach((uf) => {
     const lider = liderDe(uf.sigla);
@@ -231,7 +240,7 @@ function atualizarLegenda() {
     linha.appendChild(document.createTextNode(lider.numero + " " + lider.nome));
     caixa.appendChild(linha);
   });
-  if (!caixa.children[1]) {
+  if (!caixa.querySelector(".pessoa-legenda")) {
     const aviso = document.createElement("p");
     aviso.textContent = "Ainda sem votos para definir quem lidera.";
     caixa.appendChild(aviso);
@@ -240,9 +249,15 @@ function atualizarLegenda() {
 
 function aoMudarCargo() {
   ajustarModo();
+  Mapa.seqSelecao += 1;
   Mapa.andamentoBrasil = null;
   Mapa.andamentoUf = null;
+  Mapa.andamentoUfSigla = "";
+  Mapa.votos = {};
   Mapa.pausado = false;
+  Mapa.forcarPendente = true;
+  limparApuracaoVisivel();
+  pintar();
   pedirAtualizacao(true);
 }
 
@@ -269,8 +284,24 @@ function enquadrar(limites, zoomMaximo) {
 async function abrirEstado(sigla) {
   const uf = Config.ufPorSigla(sigla);
   if (!uf) return;
+  Mapa.seqSelecao += 1;
   Mapa.vista = uf.sigla;
   Mapa.cidadeAtiva = "";
+  Mapa.andamentoUf = null;
+  Mapa.andamentoUfSigla = "";
+  if (Mapa.cidades) {
+    Mapa.folha.removeLayer(Mapa.cidades);
+    Mapa.cidades = null;
+  }
+  limparApuracaoVisivel();
+  desenharPainel({
+    titulo: uf.nome,
+    resumo: cargoAtual().nome + " · " + Config.turnos[turnoAtual()].nome,
+    apuracao: null,
+    nota: "Lendo o percentual deste estado…",
+    candidatos: [],
+    arquivo: null
+  });
   document.getElementById("estado").value = uf.sigla;
   document.getElementById("voltar").disabled = false;
   definirBuscaCidade(true);
@@ -299,10 +330,13 @@ async function abrirEstado(sigla) {
 
 function voltarAoBrasil() {
   Mapa.seqVista += 1;
+  Mapa.seqSelecao += 1;
   Mapa.cidadeToken += 1;
   Mapa.vista = "";
   Mapa.cidadeAtiva = "";
   Mapa.andamentoUf = null;
+  Mapa.andamentoUfSigla = "";
+  limparApuracaoVisivel();
   document.getElementById("estado").value = "";
   document.getElementById("voltar").disabled = true;
   definirBuscaCidade(false);
@@ -357,15 +391,26 @@ function cidadePorIbge(uf, ibge) {
   return tabela ? tabela[String(ibge)] : null;
 }
 
+function corDoLugar(uf, registro, ap) {
+  if (modoAtual() === "lider" && uf) {
+    const daCidade = registro && Mapa.votos[chaveVotos(uf.sigla, registro.codigo)];
+    if (daCidade && daCidade.cor) return daCidade.cor;
+    const lider = liderDe(uf.sigla);
+    if (lider && lider.cor) return lider.cor;
+    return COR_VAZIA;
+  }
+  return corApuracao(ap ? ap.pstn : 0);
+}
+
 function estiloCidade(feature) {
   const uf = Config.ufPorSigla(Mapa.vista);
   const registro = uf && cidadePorIbge(uf, feature.properties.codarea);
-  const ap = registro && Mapa.andamentoUf && Mapa.andamentoUf.locais[registro.codigo];
+  const ap = registro && apuracaoDaCidade(uf.sigla, registro.codigo);
   const ativa = registro && registro.codigo === Mapa.cidadeAtiva;
   return {
     color: ativa ? "#1c1915" : "#6d655a",
     weight: ativa ? 2.4 : 0.7,
-    fillColor: corApuracao(ap ? ap.pstn : 0),
+    fillColor: corDoLugar(uf, registro, ap),
     fillOpacity: 0.78
   };
 }
@@ -376,7 +421,7 @@ function pintarCidades() {
   Mapa.cidades.eachLayer((camada) => {
     camada.setStyle(estiloCidade(camada.feature));
     const registro = uf && cidadePorIbge(uf, camada.feature.properties.codarea);
-    const ap = registro && Mapa.andamentoUf && Mapa.andamentoUf.locais[registro.codigo];
+    const ap = registro && apuracaoDaCidade(uf.sigla, registro.codigo);
     const nome = registro ? nomeBonito(registro.nome) : "Cidade";
     const pct = ap ? formatarPercentual(ap.pstn) : "sem dado";
     camada.setTooltipContent(nome + " · " + pct + " das seções");
@@ -384,6 +429,7 @@ function pintarCidades() {
 }
 
 function definirBuscaCidade(ativa) {
+  document.getElementById("caixa-cidade").hidden = !ativa;
   const campo = document.getElementById("buscar-cidade");
   campo.disabled = !ativa;
   campo.value = "";
@@ -427,28 +473,11 @@ async function selecionarCidade(uf, ibge, camada) {
   const registro = cidadePorIbge(uf, ibge);
   if (!registro) return;
   Mapa.cidadeAtiva = registro.codigo;
-  pintarCidades();
-  enquadrar(camada.getBounds(), 13);
-  const ap = Mapa.andamentoUf && Mapa.andamentoUf.locais[registro.codigo];
-  desenharPainel({
-    titulo: nomeBonito(registro.nome),
-    resumo: uf.nome + " · " + cargoAtual().nome,
-    apuracao: ap,
-    nota: "Lendo os votos desta cidade…",
-    arquivo: null,
-    candidatos: []
-  });
   const token = ++Mapa.cidadeToken;
-  const pacote = await votosDe(uf.sigla, registro.codigo, ap && ap.relogio);
-  if (token !== Mapa.cidadeToken || Mapa.cidadeAtiva !== registro.codigo) return;
-  desenharPainel({
-    titulo: nomeBonito(registro.nome),
-    resumo: uf.nome + " · " + cargoAtual().nome,
-    apuracao: ap,
-    nota: pacote.nota,
-    arquivo: pacote.arquivo,
-    candidatos: pacote.candidatos
-  });
+  limparApuracaoVisivel();
+  pintarCidades();
+  if (camada) enquadrar(camada.getBounds(), 13);
+  await atualizarPainelCidade(uf, token);
 }
 
 async function atualizarEstado(uf) {
@@ -460,17 +489,31 @@ async function atualizarEstado(uf) {
   const baixado = await Tse.baixar(endereco);
   if (token !== Mapa.seqVista || Mapa.vista !== uf.sigla) return;
   if (!baixado.ok) {
-    definirStatus(mensagemFalha(baixado, "o estado"));
+    const texto = mensagemFalha(baixado);
+    definirStatus(texto);
+    desenharPainel({
+      titulo: uf.nome,
+      resumo: cargoAtual().nome + " · " + (Config.turnos[turnoAtual()] || {}).nome,
+      apuracao: null,
+      nota: texto,
+      candidatos: [],
+      arquivo: null
+    });
     return;
   }
   Mapa.andamentoUf = Tse.lerAndamento(baixado.json);
+  Mapa.andamentoUfSigla = uf.sigla;
   pintarCidades();
-  if (!Mapa.cidadeAtiva) await mostrarPainelUf(uf, token);
+  if (token !== Mapa.seqVista || Mapa.vista !== uf.sigla) return;
+  if (Mapa.cidadeAtiva) await atualizarPainelCidade(uf, Mapa.cidadeToken);
+  else await mostrarPainelUf(uf, token);
 }
 
 async function mostrarPainelUf(uf, token) {
-  const ap = Mapa.andamentoUf && Mapa.andamentoUf.locais[uf.sigla.toLowerCase()];
+  if (token !== Mapa.seqVista || Mapa.vista !== uf.sigla || Mapa.cidadeAtiva) return;
+  const ap = apuracaoDoEstado(uf.sigla);
   const cargo = cargoAtual();
+  const marca = Mapa.seqSelecao;
   if (!Config.cargoExisteNaUf(cargo, uf.sigla)) {
     const texto = cargo.apenas
       ? cargo.nome + " só concorre no Distrito Federal."
@@ -488,11 +531,11 @@ async function mostrarPainelUf(uf, token) {
     arquivo: null
   });
   const pacote = await votosDe(uf.sigla, "", ap && ap.relogio);
-  if (token !== Mapa.seqVista || Mapa.vista !== uf.sigla || Mapa.cidadeAtiva) return;
+  if (token !== Mapa.seqVista || Mapa.vista !== uf.sigla || Mapa.cidadeAtiva || marca !== Mapa.seqSelecao) return;
   desenharPainel({
     titulo: uf.nome,
     resumo: cargo.nome + " · " + Config.turnos[turnoAtual()].nome,
-    apuracao: ap,
+    apuracao: apuracaoDoEstado(uf.sigla),
     nota: pacote.nota,
     arquivo: pacote.arquivo,
     candidatos: pacote.candidatos
@@ -503,6 +546,7 @@ async function mostrarPainelUf(uf, token) {
 
 async function votosDe(sigla, codigoCidade, relogio) {
   const chave = chaveVotos(sigla, codigoCidade);
+  const marca = Mapa.seqSelecao;
   const guardado = Mapa.votos[chave];
   if (guardado && guardado.relogio === (relogio || "") && !guardado.forcar) return guardado;
   const endereco = Tse.enderecoVotos(turnoAtual(), cargoAtual(), sigla, codigoCidade);
@@ -523,6 +567,9 @@ async function votosDe(sigla, codigoCidade, relogio) {
     Mapa.votos[chave] = pacote;
     return pacote;
   }
+  if (marca !== Mapa.seqSelecao) {
+    return pacoteVazio(endereco);
+  }
   const candidatos = Tse.lerCandidatos(baixado.json);
   const primeiro = candidatos.find((c) => c.votos > 0) || null;
   const pacote = {
@@ -532,7 +579,7 @@ async function votosDe(sigla, codigoCidade, relogio) {
     arquivo: endereco,
     nome: primeiro ? primeiro.nome : "",
     numero: primeiro ? primeiro.numero : "",
-    cor: primeiro ? corCandidato(primeiro.numero) : ""
+    cor: primeiro ? corCandidato(primeiro) : ""
   };
   Mapa.votos[chave] = pacote;
   return pacote;
@@ -551,6 +598,7 @@ function notaDosCandidatos(candidatos) {
 }
 
 function pedirAtualizacao(forcar) {
+  if (forcar) Mapa.forcarPendente = true;
   if (Mapa.ocupado) {
     Mapa.deNovo = true;
     return;
@@ -558,8 +606,10 @@ function pedirAtualizacao(forcar) {
   Mapa.ocupado = true;
   const volta = (async () => {
     do {
+      const usarForca = forcar || Mapa.forcarPendente;
+      Mapa.forcarPendente = false;
       Mapa.deNovo = false;
-      await atualizarTudo(forcar);
+      await atualizarTudo(usarForca);
       forcar = false;
     } while (Mapa.deNovo);
   })();
@@ -570,15 +620,30 @@ function pedirAtualizacao(forcar) {
 
 async function atualizarTudo(forcar) {
   if (!forcar && (document.hidden || Mapa.pausado)) return;
-  if (forcar) Mapa.votos = {};
+  if (forcar) {
+    Object.keys(Mapa.votos).forEach((chave) => {
+      Mapa.votos[chave].forcar = true;
+    });
+  }
   const seq = ++Mapa.seqDados;
+  const marca = Mapa.seqSelecao;
   const cargo = cargoAtual();
+  const turno = turnoAtual();
   const endereco = Tse.enderecoAndamento(turnoAtual(), cargo, "br");
   const baixado = await Tse.baixar(endereco);
-  if (seq !== Mapa.seqDados) return;
+  if (seq !== Mapa.seqDados || marca !== Mapa.seqSelecao || turno !== turnoAtual() || cargo.id !== cargoAtual().id) return;
   if (!baixado.ok) {
     if (baixado.status === 404) Mapa.pausado = true;
-    definirStatus(mensagemFalha(baixado, "o Brasil"));
+    const texto = mensagemFalha(baixado, "o Brasil");
+    definirStatus(texto);
+    desenharPainel({
+      titulo: Mapa.vista ? (Config.ufPorSigla(Mapa.vista) || {}).nome || Mapa.vista : "Brasil",
+      resumo: cargo.nome + " · " + (Config.turnos[turno] || {}).nome,
+      apuracao: null,
+      nota: texto,
+      candidatos: [],
+      arquivo: null
+    });
     return;
   }
   Mapa.pausado = false;
@@ -599,12 +664,14 @@ async function atualizarTudo(forcar) {
 }
 
 async function mostrarBrasil(cargo, seq) {
-  const ap = Mapa.andamentoBrasil && Mapa.andamentoBrasil.locais.br;
+  const marca = Mapa.seqSelecao;
+  if (seq !== Mapa.seqDados || Mapa.vista || marca !== Mapa.seqSelecao || cargo.id !== cargoAtual().id) return;
+  const ap = apuracaoDoBrasil();
+  const resumo = cargo.nome + " · " + Config.turnos[turnoAtual()].nome;
   if (cargo.id !== "presidente") {
-    if (seq !== Mapa.seqDados || Mapa.vista) return;
     desenharPainel({
       titulo: "Brasil",
-      resumo: cargo.nome + " · " + Config.turnos[turnoAtual()].nome,
+      resumo: resumo,
       apuracao: ap,
       nota: "Os votos deste cargo são publicados por estado. Clique em um estado para ampliar e ver os candidatos. O eleitor do exterior entra no total do Brasil e não tem estado no mapa.",
       candidatos: [],
@@ -612,13 +679,20 @@ async function mostrarBrasil(cargo, seq) {
     });
     return;
   }
-  const relogio = ap && ap.relogio;
-  const pacote = await votosDe("br", "", relogio);
-  if (seq !== Mapa.seqDados || Mapa.vista) return;
   desenharPainel({
     titulo: "Brasil",
-    resumo: cargo.nome + " · " + Config.turnos[turnoAtual()].nome,
+    resumo: resumo,
     apuracao: ap,
+    nota: "Lendo os votos do Brasil…",
+    candidatos: [],
+    arquivo: null
+  });
+  const pacote = await votosDe("br", "", ap && ap.relogio);
+  if (seq !== Mapa.seqDados || Mapa.vista || marca !== Mapa.seqSelecao || cargo.id !== cargoAtual().id) return;
+  desenharPainel({
+    titulo: "Brasil",
+    resumo: resumo,
+    apuracao: apuracaoDoBrasil(),
     nota: pacote.nota,
     arquivo: pacote.arquivo,
     candidatos: pacote.candidatos
@@ -664,12 +738,104 @@ function mostrarPainelBrasil() {
   if (Mapa.andamentoBrasil) mostrarBrasil(cargoAtual(), Mapa.seqDados);
 }
 
+function fontesApuracao() {
+  return {
+    brasil: Mapa.andamentoBrasil,
+    uf: Mapa.andamentoUf,
+    ufSigla: Mapa.andamentoUfSigla
+  };
+}
+
+function apuracaoDoBrasil() {
+  return Tse.escolherApuracao("br", fontesApuracao(), "", "");
+}
+
+function apuracaoDoEstado(sigla) {
+  return Tse.escolherApuracao("uf", fontesApuracao(), sigla, "");
+}
+
+function apuracaoDaCidade(sigla, codigo) {
+  return Tse.escolherApuracao("mun", fontesApuracao(), sigla, codigo);
+}
+
+function registroPorCodigo(uf, codigo) {
+  const tabela = Mapa.tabela && Mapa.tabela[uf.sigla.toLowerCase()];
+  if (!tabela || !codigo) return null;
+  return Object.values(tabela).find((cidade) => cidade.codigo === codigo) || null;
+}
+
+function limparApuracaoVisivel() {
+  Mapa.apuracao = null;
+  const numeros = document.getElementById("painel-numeros");
+  const lista = document.getElementById("painel-candidatos");
+  if (numeros) numeros.replaceChildren();
+  if (lista) lista.replaceChildren();
+  const nota = document.getElementById("painel-nota");
+  if (nota) nota.textContent = "";
+  const link = document.getElementById("painel-arquivo");
+  if (link) link.hidden = true;
+}
+
+function definirApuracao(ap) {
+  if (!ap) {
+    Mapa.apuracao = null;
+    return null;
+  }
+  Mapa.apuracao = {
+    pstn: Tse.numero(ap.pstn),
+    secoesContadas: Tse.numero(ap.secoesContadas),
+    secoesTotal: Tse.numero(ap.secoesTotal),
+    eleitoresContados: Tse.numero(ap.eleitoresContados),
+    eleitoresTotal: Tse.numero(ap.eleitoresTotal),
+    relogio: ap.relogio || ""
+  };
+  return Mapa.apuracao;
+}
+
+function pacoteVazio(endereco) {
+  return {
+    relogio: "",
+    candidatos: [],
+    nota: "",
+    arquivo: endereco,
+    nome: "",
+    numero: "",
+    cor: ""
+  };
+}
+
+async function atualizarPainelCidade(uf, token) {
+  const registro = registroPorCodigo(uf, Mapa.cidadeAtiva);
+  if (!registro) return;
+  if (token !== Mapa.cidadeToken || Mapa.vista !== uf.sigla || Mapa.cidadeAtiva !== registro.codigo) return;
+  const ap = apuracaoDaCidade(uf.sigla, registro.codigo);
+  const marca = Mapa.seqSelecao;
+  desenharPainel({
+    titulo: nomeBonito(registro.nome),
+    resumo: uf.nome + " · " + cargoAtual().nome,
+    apuracao: ap,
+    nota: "Lendo os votos desta cidade…",
+    arquivo: null,
+    candidatos: []
+  });
+  const pacote = await votosDe(uf.sigla, registro.codigo, ap && ap.relogio);
+  if (token !== Mapa.cidadeToken || Mapa.vista !== uf.sigla || Mapa.cidadeAtiva !== registro.codigo || marca !== Mapa.seqSelecao) return;
+  desenharPainel({
+    titulo: nomeBonito(registro.nome),
+    resumo: uf.nome + " · " + cargoAtual().nome,
+    apuracao: apuracaoDaCidade(uf.sigla, registro.codigo),
+    nota: pacote.nota,
+    arquivo: pacote.arquivo,
+    candidatos: pacote.candidatos
+  });
+}
+
 function desenharPainel(info) {
   document.getElementById("painel-titulo").textContent = info.titulo;
   document.getElementById("painel-resumo").textContent = info.resumo || "";
   const numeros = document.getElementById("painel-numeros");
   numeros.replaceChildren();
-  const ap = info.apuracao;
+  const ap = definirApuracao(info.apuracao);
   if (ap) {
     adicionarNumero(numeros, "Seções contadas", formatarInteiro(ap.secoesContadas) + " de " + formatarInteiro(ap.secoesTotal));
     adicionarNumero(numeros, "Percentual", formatarPercentual(ap.pstn));
@@ -678,7 +844,8 @@ function desenharPainel(info) {
   }
   const lista = document.getElementById("painel-candidatos");
   lista.replaceChildren();
-  const visiveis = (info.candidatos || []).filter((c) => c.votos > 0).slice(0, 8);
+  const limite = cargoAtual().lista || 8;
+  const visiveis = (info.candidatos || []).filter((c) => c.votos > 0).slice(0, limite);
   const mostrarZeros = visiveis.length === 0 && (info.candidatos || []).length <= 20;
   (mostrarZeros ? info.candidatos : visiveis).forEach((c) => lista.appendChild(linhaCandidato(c)));
   document.getElementById("painel-nota").textContent = info.nota || "";
@@ -705,6 +872,7 @@ function linhaCandidato(c) {
   const item = document.createElement("li");
   const numero = document.createElement("span");
   numero.className = "numero";
+  numero.style.background = corCandidato(c);
   numero.textContent = c.numero;
   const texto = document.createElement("div");
   const nome = document.createElement("strong");
@@ -722,9 +890,10 @@ function linhaCandidato(c) {
   return item;
 }
 
-function mensagemFalha(baixado, lugar) {
+function mensagemFalha(baixado) {
   if (baixado.status === 404) {
-    return "O TSE ainda não publicou o arquivo de " + lugar + ". A leitura automática foi pausada para não repetir um endereço vazio. Use Atualizar agora para tentar de novo.";
+    const nome = (Config.turnos[turnoAtual()] || {}).nome || "turno";
+    return "O TSE ainda não publicou o " + nome + ". No 1º turno os números já aparecem. A leitura automática foi pausada para não repetir um endereço vazio.";
   }
   if (baixado.status === 0) return "Sem conexão com o TSE neste momento.";
   return "O TSE respondeu com o código " + baixado.status + ".";
