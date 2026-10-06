@@ -14,6 +14,9 @@ __pycache__/
 # Preferências deste computador. O painel abre sem elas.
 .streamlit/
 
+# Manual pessoal. Explica como montar o projeto de novo e fica só neste computador.
+como-construir.md
+
 # Arquivos do sistema e do editor
 .DS_Store
 Thumbs.db

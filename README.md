@@ -1,6 +1,6 @@
 # Mapa da apuração das Eleições de 2026
 
-Eu fiz esta ferramenta para poder visualizar a contagem de votos do Brasil durante a apuração das eleições de 2026. A pessoa escolhe o turno e o cargo, vê o país de forma colorida e interativa, podendo até mesmo escolher o estado e a cidade de interesse. Os números saem do site público do TSE e a página os busca automaticamente, a cada 20 segundos. O objetivo é acompanhar a contagem num mapa simples, aberto a qualquer pessoa, sem instalar programa. Na pasta `dashboard` eu também fiz um painel em Python, com Streamlit, para abrir neste computador com as mesmas escolhas da página.
+Eu fiz esta ferramenta para poder visualizar a contagem de votos do Brasil durante a apuração das eleições de 2026. A pessoa escolhe o turno e o cargo, vê o país de forma colorida e interativa, podendo até mesmo escolher o estado e a cidade de interesse. Os números saem do site público do TSE e a página os busca automaticamente, a cada 20 segundos. O objetivo é acompanhar a contagem num mapa simples, aberto a qualquer pessoa, sem instalar programa. Na pasta `dashboard` eu também fiz um painel em Python, com as mesmas escolhas da página. Esse painel só funciona no computador em que o programa foi iniciado. O link público abre o mapa.
 
 ## Sumário
 
@@ -68,7 +68,7 @@ Eu usei cada ferramenta numa parte da página. Nenhuma delas exige cadastro para
 | Plotly | Biblioteca que desenha gráficos dentro da página | Em `dashboard/app.py`, desenha o contorno colorido dos estados |
 | Node.js | Opcional | Roda `node tests/verificar.js` para conferir se os endereços do TSE continuam certos |
 
-Eu montei o mapa em HTML, CSS e JavaScript. O navegador de cada visitante consulta o TSE direto. Por isso a página cabe no GitHub Pages: lá não roda Python, e esta página não precisa de um programa no servidor. O painel da pasta `dashboard` é outra peça. Ele usa Python e Streamlit, roda só no computador em que eu o abro, e lê os mesmos arquivos do TSE. O passo a passo está em [Painel local com Streamlit](#painel-local-com-streamlit).
+Eu montei o mapa em HTML, CSS e JavaScript. O navegador de cada visitante consulta o TSE direto. Por isso a página cabe no GitHub Pages: lá não roda Python, e esta página não precisa de um programa no servidor. O painel da pasta `dashboard` é outra peça. Ele só funciona localmente, no computador em que eu o abro, e lê os mesmos arquivos do TSE. O passo a passo está em [Painel local com Streamlit](#painel-local-com-streamlit).
 
 ## Como ver o mapa e interagir em tempo real
 
@@ -98,7 +98,9 @@ Os arquivos da página estão no repositório [AndressaLF/Eleicoes2026_MapaInter
 
 [https://andressalf.github.io/Eleicoes2026_MapaInterativo/](https://andressalf.github.io/Eleicoes2026_MapaInterativo/)
 
-Quem abrir esse link vê o mesmo mapa. Cada visitante consulta o TSE do próprio computador. O meu computador não fica no meio.
+Quem abrir esse link vê o mapa. Cada visitante consulta o TSE do próprio computador. O meu computador não fica no meio.
+
+O painel da pasta `dashboard` fica de fora desse link. Ele só abre no computador da pessoa que ligou o programa, em geral em `http://localhost:8501`.
 
 ### O que dá para fazer na tela
 
@@ -508,7 +510,9 @@ Se um endereço estiver errado, o TSE pode pausar o acesso por alguns minutos. E
 
 ## Painel local com Streamlit
 
-Eu fiz este painel para ver a mesma apuração da página, neste computador, com Python. A tela repete as escolhas do mapa: turno, cargo, cor, estado e cidade. Os números saem dos mesmos endereços do TSE. A página publicada no GitHub Pages continua sendo o mapa em HTML. O painel Streamlit não entra nessa página, porque o GitHub Pages não executa Python.
+O dashboard só funciona localmente. Eu ligo o programa neste computador e a tela aparece no navegador, no endereço que o terminal mostra, em geral `http://localhost:8501`. Outra pessoa, em outro computador, não abre essa tela pelo link do GitHub. O GitHub só guarda os arquivos, para eu baixar o projeto e rodar de novo aqui.
+
+A tela repete as escolhas do mapa: turno, cargo, cor, estado e cidade. Os números saem dos mesmos endereços do TSE. O mapa publicado para qualquer pessoa continua sendo a página em HTML.
 
 A pasta é `dashboard`, no mesmo nível de `js`, `css` e `data`.
 
